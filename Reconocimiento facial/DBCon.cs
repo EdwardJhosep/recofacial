@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.VisualBasic.ApplicationServices;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.OleDb;
@@ -46,26 +47,37 @@ namespace Reconocimiento_facial
         }
     }
     public DataTable ObtenerBytesImagen()
+    {
+        try
         {
             string sql = "SELECT IdImage,Name,Code,Face FROM UserFaces";
             OleDbDataAdapter adaptador = new OleDbDataAdapter(sql, conn);
             DataTable dt = new DataTable();
             adaptador.Fill(dt);
-            int cont = dt.Rows.Count;
-            Name = new string[cont];
 
-            for (int i = 0; i < cont; i++)
+            Users.Clear();
+            foreach (DataRow row in dt.Rows)
             {
-                Name[i] = dt.Rows[i]["Name"].ToString();
-                face = (byte[])dt.Rows[i]["Face"];
-                Face.Add(face);
+                Users.Add(new UserData
+                {
+                    Id = Convert.ToInt32(row["IdImage"]),
+                    Name = row["Name"].ToString(),
+                    Code = row["Code"].ToString(),
+                    FaceData = (byte[])row["Face"]
+                });
             }
-            TotalUser = dt.Rows.Count;
-            conn.Close();
+
             return dt;
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error: " + ex.Message);
+            return null;
+        }
+    }
 
-        public void ConvertImgToBinary(string Name, string Code, Image Img)
+    // Agregar métodos para eliminar y actualizar aquí
+    public void ConvertImgToBinary(string Name, string Code, Image Img)
         {
             Bitmap bmp = new Bitmap(Img);
             MemoryStream MyStream = new MemoryStream();
