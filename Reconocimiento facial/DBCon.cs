@@ -11,13 +11,11 @@ namespace Reconocimiento_facial
     public class DBCon
     {
         private OleDbConnection conn;
-        public string[] Name;
-        private byte[] face;
-        public List<byte[]> Face = new List<byte[]>();
-        public int TotalUser;
-        public DBCon()
+        public List<UserData> Users = new List<UserData>();
+
+        public DBCon(string connectionString)
         {
-            conn = new OleDbConnection("Provider = Microsoft.Jet.OLEDB.4.0; Data Source = UsersFace.mdb");
+            conn = new OleDbConnection(connectionString);
             conn.Open();
         }
         public bool GuardarImagen(string Name, string Code, byte[] abImagen)
