@@ -1,83 +1,60 @@
-﻿using Microsoft.VisualBasic.ApplicationServices;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.OleDb;
 using System.Drawing;
 using System.IO;
-
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Reconocimiento_facial
 {
-    // Definir la clase DBCon
     public class DBCon
     {
-        // Crear un campo para almacenar la conexión a la base de datos
         private OleDbConnection conn;
-
-        // Crear una lista para almacenar datos de usuarios
-        public List<UserData> Users = new List<UserData>();
-
-        // Constructor de la clase, recibe la cadena de conexión a la base de datos
-        public DBCon(string connectionString)
+        public string[] Name;
+        private byte[] face;
+        public List<byte[]> Face = new List<byte[]>();
+        public int TotalUser;
+        public DBCon()
         {
-            // Inicializar la conexión utilizando la cadena de conexión proporcionada
-            conn = new OleDbConnection(connectionString);
-            // Abrir la conexión
+            conn = new OleDbConnection("Provider = Microsoft.Jet.OLEDB.4.0; Data Source = UsersFace.mdb");
             conn.Open();
         }
-    }
-    public bool GuardarImagen(string Name, string Code, byte[] abImagen)
-    {
-        try
+        public bool GuardarImagen(string Name, string Code, byte[] abImagen)
         {
-            using (OleDbCommand comm = new OleDbCommand("INSERT INTO UserFaces (Name, Code, Face) VALUES (?, ?, ?)", conn))
-            {
-                comm.Parameters.AddWithValue("@Name", Name);
-                comm.Parameters.AddWithValue("@Code", Code);
-                comm.Parameters.AddWithValue("@Face", abImagen);
-                int iResultado = comm.ExecuteNonQuery();
-                return iResultado > 0;
-            }
+            conn.Open();
+            OleDbCommand comm = new OleDbCommand("INSERT INTO UserFaces (Name,Code,Face) VALUES ('" + Name + "','" + Code + "',?)", conn);           
+            OleDbParameter parImagen = new OleDbParameter("@Face", OleDbType.VarBinary, abImagen.Length);
+            parImagen.Value = abImagen;
+            comm.Parameters.Add(parImagen);            
+            int iResultado = comm.ExecuteNonQuery();
+            conn.Close();
+            return Convert.ToBoolean(iResultado);
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine("Error: " + ex.Message);
-            return false;
-        }
-    }
-    public DataTable ObtenerBytesImagen()
-    {
-        try
+
+        public DataTable ObtenerBytesImagen()
         {
             string sql = "SELECT IdImage,Name,Code,Face FROM UserFaces";
             OleDbDataAdapter adaptador = new OleDbDataAdapter(sql, conn);
             DataTable dt = new DataTable();
             adaptador.Fill(dt);
+            int cont = dt.Rows.Count;
+            Name = new string[cont];
 
-            Users.Clear();
-            foreach (DataRow row in dt.Rows)
+            for (int i = 0; i < cont; i++)
             {
-                Users.Add(new UserData
-                {
-                    Id = Convert.ToInt32(row["IdImage"]),
-                    Name = row["Name"].ToString(),
-                    Code = row["Code"].ToString(),
-                    FaceData = (byte[])row["Face"]
-                });
+                Name[i] = dt.Rows[i]["Name"].ToString();
+                face = (byte[])dt.Rows[i]["Face"];
+                Face.Add(face);
             }
-
+            TotalUser = dt.Rows.Count;
+            conn.Close();
             return dt;
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine("Error: " + ex.Message);
-            return null;
-        }
-    }
 
-    // Agregar métodos para eliminar y actualizar aquí
-    public void ConvertImgToBinary(string Name, string Code, Image Img)
+        public void ConvertImgToBinary(string Name, string Code, Image Img)
         {
             Bitmap bmp = new Bitmap(Img);
             MemoryStream MyStream = new MemoryStream();
